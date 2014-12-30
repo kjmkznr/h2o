@@ -40,6 +40,7 @@ enum {
     ELEMENT_TYPE_REQUEST_LINE, /* %r */
     ELEMENT_TYPE_STATUS, /* %s */
     ELEMENT_TYPE_BYTES_SENT, /* %b */
+    ELEMENT_TYPE_REQUEST_METHOD, /* %m */
     ELEMENT_TYPE_IN_HEADER_TOKEN, /* %{data.header_token}i */
     ELEMENT_TYPE_IN_HEADER_STRING, /* %{data.header_string}i */
     ELEMENT_TYPE_OUT_HEADER_TOKEN, /* %{data.header_token}o */
@@ -130,6 +131,7 @@ static struct log_element_t *compile_log_format(const char *fmt, size_t *_num_el
                 TYPE_MAP('r', ELEMENT_TYPE_REQUEST_LINE);
                 TYPE_MAP('s', ELEMENT_TYPE_STATUS);
                 TYPE_MAP('b', ELEMENT_TYPE_BYTES_SENT);
+                TYPE_MAP('m', ELEMENT_TYPE_REQUEST_METHOD);
 #undef TYPE_MAP
                 default:
                     fprintf(stderr, "failed to compile log format: unknown escape sequence: %%%c\n", pt[-1]);
@@ -289,6 +291,10 @@ static void log_access(h2o_logger_t *_self, h2o_req_t *req)
         case ELEMENT_TYPE_BYTES_SENT:
             RESERVE(sizeof("18446744073709551615") - 1);
             pos += sprintf(pos, "%llu", (unsigned long long)req->bytes_sent);
+            break;
+        case ELEMENT_TYPE_REQUEST_METHOD:
+            RESERVE(req->method.len * 4);
+            pos = append_unsafe_string(pos, req->method.base, req->method.len);
             break;
 
 #define EMIT_HEADER(headers, _index) do { \
